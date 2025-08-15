@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:owallpaper/colors.dart';
+import 'package:flutter/services.dart'; // <-- for rootBundle
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_wallpaper_manager/flutter_wallpaper_manager.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_cropper/image_cropper.dart';
+import 'package:owallpaper/colors.dart';
+
 
 class WallpaperScreenLocal extends StatefulWidget {
   final String assetImagePath;
@@ -133,58 +135,64 @@ class _WallpaperScreenLocalState extends State<WallpaperScreenLocal> {
     }
   }
 
-  Future<void> cropImage(BuildContext context) async {
-    try {
-      // Get the screen's aspect ratio
-      final screenSize = MediaQuery.of(context).size;
-      final screenAspectRatio = screenSize.width / screenSize.height;
+Future<void> cropImage(BuildContext context) async {
+  try {
+    if (!mounted) return;
 
-      // Copy the asset image to a temporary file
-      final byteData =
-          await DefaultAssetBundle.of(context).load(widget.assetImagePath);
-      final tempDir = await getTemporaryDirectory();
-      final tempFilePath = '${tempDir.path}/temp_image.jpg';
+    // Get aspect ratio safely
+    final screenSize = MediaQuery.of(context).size;
+    final aspectRatioX = screenSize.width;
+    final aspectRatioY = screenSize.height;
 
-      final tempFile = File(tempFilePath);
-      await tempFile.writeAsBytes(byteData.buffer.asUint8List());
+    // Load asset to temp file
+    final byteData =
+        await rootBundle.load(widget.assetImagePath); // safer than DefaultAssetBundle
+    final tempDir = await getTemporaryDirectory();
+    final tempFilePath = '${tempDir.path}/temp_image.jpg';
+    final tempFile = File(tempFilePath);
+    await tempFile.writeAsBytes(byteData.buffer.asUint8List());
 
-      // Crop the image with a locked aspect ratio
-      final croppedFile = await ImageCropper().cropImage(
-        sourcePath: tempFile.path,
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Crop Image',
-            toolbarColor: Mycolors().primarycolor,
-            toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.original,
-            lockAspectRatio: true,
-            cropFrameStrokeWidth: 2,
-          ),
-          IOSUiSettings(
-            title: 'Crop Image',
-            aspectRatioLockEnabled: true,
-          ),
-        ],
-        aspectRatio: CropAspectRatio(
-            ratioX: screenSize.width, ratioY: screenSize.height),
-      );
+    // Crop
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: tempFile.path,
+      aspectRatio: CropAspectRatio(
+        ratioX: aspectRatioX / aspectRatioY, // keep it normalized
+        ratioY: 1,
+      ),
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Crop Image',
+          toolbarColor: Mycolors().primarycolor,
+          toolbarWidgetColor: Colors.white,
+          initAspectRatio: CropAspectRatioPreset.original,
+          lockAspectRatio: true,
+        ),
+        IOSUiSettings(
+          title: 'Crop Image',
+          aspectRatioLockEnabled: true,
+        ),
+      ],
+    );
 
-      if (croppedFile != null) {
-        setState(() {
-          localFilePath = croppedFile.path; // Save cropped file path
-        });
-        choosewallptype(context); // Proceed to wallpaper type selection
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Cropping canceled")),
-        );
-      }
-    } catch (e) {
+    if (croppedFile != null) {
+      if (!mounted) return;
+      setState(() {
+        localFilePath = croppedFile.path; // CroppedFile.path works
+      });
+      choosewallptype(context);
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error during cropping: $e")),
+        SnackBar(content: Text("Cropping canceled")),
       );
     }
+  } catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error during cropping: $e")),
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

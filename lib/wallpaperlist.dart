@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 class Wallpaperlist {
   List<String> localwallpapers = [
-
       'lib/assets/localwallpapers/1.jpg',
       'lib/assets/localwallpapers/2.jpg',
       'lib/assets/localwallpapers/3.jpg',
