@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "20961022270",
+    "project_id": "wallpaper-500c5",
+    "storage_bucket": "wallpaper-500c5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:20961022270:android:560e24c975a5fd6b85dc6f",
+        "android_client_info": {
+          "package_name": "com.example.myapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLj9s2g3lFVPR4xaJcuHg2JESPyNfvmBc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:20961022270:android:f3fe6b4d7898682f85dc6f",
+        "android_client_info": {
+          "package_name": "com.example.owallpaper"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLj9s2g3lFVPR4xaJcuHg2JESPyNfvmBc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
