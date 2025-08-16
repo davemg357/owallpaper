@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +34,8 @@ class _FristPageState extends State<FristPage> {
   final Favoritelist favoriteListinhere = Favoritelist();
   List<bool> likedStatus = [];
 
+  Timer? _timeoutTimer;
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +44,19 @@ class _FristPageState extends State<FristPage> {
     loadFavoriteList();
     loadCachedUrls();
     if (!updateiscalled) checkupdate();
+
+    // timeout for 10 seconds only if no cached images
+    _timeoutTimer = Timer(Duration(seconds: 10), () {
+      if (loading && shuffledImages.isEmpty) {
+        showNoInternetDialog();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timeoutTimer?.cancel();
+    super.dispose();
   }
 
   /// Load favorites from local storage
@@ -55,12 +72,12 @@ class _FristPageState extends State<FristPage> {
     if (cachedUrls != null && cachedUrls.isNotEmpty) {
       shuffledImages = List.from(cachedUrls)..shuffle(); // shuffle each launch
       likedStatus = List.generate(
-          shuffledImages.length,
-          (index) =>
-              favoriteListinhere.items.contains(shuffledImages[index]));
+        shuffledImages.length,
+        (index) => favoriteListinhere.items.contains(shuffledImages[index]),
+      );
       setState(() => loading = false);
 
-      // Also refresh in background to detect new images
+      // refresh in background
       fetchFirebaseImages();
     } else {
       fetchFirebaseImages();
@@ -83,7 +100,7 @@ class _FristPageState extends State<FristPage> {
       if (newUrls.isNotEmpty) {
         setState(() {
           shuffledImages.addAll(newUrls);
-          shuffledImages.shuffle(); // shuffle old + new images
+          shuffledImages.shuffle();
 
           likedStatus = List.generate(
             shuffledImages.length,
@@ -93,16 +110,55 @@ class _FristPageState extends State<FristPage> {
           loading = false;
         });
 
-        // Save updated list to cache
+        // Save updated list
         final prefs = await SharedPreferences.getInstance();
         prefs.setStringList('wallpaper_urls', shuffledImages);
       } else if (loading) {
-        setState(() => loading = false); // first load finished
+        setState(() => loading = false);
       }
     } catch (e) {
       print('Error fetching images: $e');
-      if (loading) setState(() => loading = false);
+      if (loading && shuffledImages.isEmpty) {
+        showNoInternetDialog();
+        setState(() => loading = false);
+      } else {
+        setState(() => loading = false);
+      }
     }
+  }
+
+  /// Show no internet dialog
+  void showNoInternetDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text("Connection Error"),
+        content: Text("No internet connection or loading took too long."),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() => loading = true);
+              loadCachedUrls();
+              _timeoutTimer?.cancel();
+              _timeoutTimer = Timer(Duration(seconds: 10), () {
+                if (loading && shuffledImages.isEmpty) {
+                  showNoInternetDialog();
+                }
+              });
+            },
+            child: Text("Retry"),
+          ),
+          TextButton(
+            onPressed: () {
+              SystemNavigator.pop(); // exit app
+            },
+            child: Text("Exit"),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Load language preference
@@ -177,7 +233,7 @@ class _FristPageState extends State<FristPage> {
           ? Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Slider (show up to 3 images)
+                // Slider (show random 5 images)
                 if (shuffledImages.isNotEmpty)
                   Container(
                     margin: EdgeInsets.all(5),
@@ -188,13 +244,11 @@ class _FristPageState extends State<FristPage> {
                         autoPlayInterval: Duration(seconds: 2),
                         enlargeCenterPage: true,
                       ),
-                      items: shuffledImages
-                          .take(shuffledImages.length >= 3
-                              ? 3
-                              : shuffledImages.length)
-                          .map((url) {
-                        final fileName =
-                            Uri.parse(url).pathSegments.last.split('.').first;
+                      items: shuffledImages.take(
+  shuffledImages.length >= 5 ? 5 : shuffledImages.length,
+).map((url) {
+                        final fileNamex = Uri.parse(url).pathSegments.last.split('.').first;
+                        final fileName = fileNamex.split('/').last;
                         return Stack(
                           fit: StackFit.expand,
                           children: [
@@ -216,9 +270,10 @@ class _FristPageState extends State<FristPage> {
                                 child: Text(
                                   fileName,
                                   style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                      fontFamily: 'accentfont'),
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontFamily: 'accentfont',
+                                  ),
                                 ),
                               ),
                             ),

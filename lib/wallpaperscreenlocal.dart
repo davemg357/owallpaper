@@ -238,7 +238,7 @@ Future<void> cropImage(BuildContext context) async {
           ? const CircularProgressIndicator(color: Colors.white)
           : FloatingActionButton(
               backgroundColor: Colors.white,
-              child: const Icon(Icons.crop, color: Colors.black),
+              child: const Icon(Icons.done, color: Colors.black),
               onPressed: () => cropImage(context),
             ),
     );
