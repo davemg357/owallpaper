@@ -33,7 +33,6 @@ class _FristPageState extends State<FristPage> {
   bool loading = true;
   final Favoritelist favoriteListinhere = Favoritelist();
   List<bool> likedStatus = [];
-
   Timer? _timeoutTimer;
 
   @override
@@ -84,7 +83,7 @@ class _FristPageState extends State<FristPage> {
     }
   }
 
-  /// Fetch wallpapers from Firebase Storage
+  /// Fetch wallpapers from Firebase Storage (handle add & delete)
   Future<void> fetchFirebaseImages() async {
     try {
       final storageRef = FirebaseStorage.instance.ref().child('wallpapers');
@@ -94,19 +93,25 @@ class _FristPageState extends State<FristPage> {
         result.items.map((ref) => ref.getDownloadURL()),
       );
 
-      final existingUrls = shuffledImages.toSet();
-      final newUrls = urls.where((url) => !existingUrls.contains(url)).toList();
+      // Update list: remove deleted, add new
+      final Set<String> newSet = urls.toSet();
+      final Set<String> oldSet = shuffledImages.toSet();
 
-      if (newUrls.isNotEmpty) {
+      // Remove deleted URLs
+      final removedUrls = oldSet.difference(newSet);
+      // Add new URLs
+      final addedUrls = newSet.difference(oldSet);
+
+      if (removedUrls.isNotEmpty || addedUrls.isNotEmpty) {
         setState(() {
-          shuffledImages.addAll(newUrls);
+          shuffledImages.removeWhere((url) => removedUrls.contains(url));
+          shuffledImages.addAll(addedUrls);
           shuffledImages.shuffle();
 
           likedStatus = List.generate(
             shuffledImages.length,
             (index) => favoriteListinhere.items.contains(shuffledImages[index]),
           );
-
           loading = false;
         });
 
@@ -233,7 +238,6 @@ class _FristPageState extends State<FristPage> {
           ? Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Slider (show random 5 images)
                 if (shuffledImages.isNotEmpty)
                   Container(
                     margin: EdgeInsets.all(5),
@@ -245,8 +249,8 @@ class _FristPageState extends State<FristPage> {
                         enlargeCenterPage: true,
                       ),
                       items: shuffledImages.take(
-  shuffledImages.length >= 5 ? 5 : shuffledImages.length,
-).map((url) {
+                        shuffledImages.length >= 5 ? 5 : shuffledImages.length,
+                      ).map((url) {
                         final fileNamex = Uri.parse(url).pathSegments.last.split('.').first;
                         final fileName = fileNamex.split('/').last;
                         return Stack(

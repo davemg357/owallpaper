@@ -49,14 +49,13 @@ dependencies:
   firebase_database: ^11.2.0
   cloud_firestore: ^5.5.1
   connectivity_plus: ^4.0.0
-  wallpaper_manager_plus: ^0.0.4
-  # flutter_wallpaper_manager: ^0.0.4
   image_gallery_saver_plus: ^4.0.1
   image_cropper: ^9.1.0
   image: ^4.5.2
-  flutter_wallpaper_manager: ^0.0.4
   carousel_slider: ^5.1.1
   flutter_cache_manager: ^3.4.1
+  assets_cleaner: ^0.1.5+12
+  wallpaper_manager_flutter: ^1.0.1
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
 
